@@ -64,6 +64,8 @@ function show_active_pomodoro_timebox()
   local elapsed_time
   local remaining_time
 
+  [[ "$flag" == 'VERBOSE' ]] && flag='CMD_SUBSTITUTION_VERBOSE'
+
   current_timestamp=$(get_timestamp_sec)
 
   while IFS=$'\n' read -r raw_active_timebox && [[ -n "${raw_active_timebox}" ]]; do
@@ -79,16 +81,19 @@ function show_active_pomodoro_timebox()
     say "Started at: ${start_time} [${start_date}]"
     say '- Elapsed time:' "$(secs_to_arbitrarily_long_hours_mins_secs "${elapsed_time}")"
     say '- You still have' "$(secs_to_arbitrarily_long_hours_mins_secs "${remaining_time}")"
-  done <<< "$(select_from 'active_timebox' '"date","time","duration"')"
+  done <<< "$(select_from 'active_timebox' '"date","time","duration"' '' '' "$flag")"
 }
 
 # Show registered tags with number identification.
 function show_tags()
 {
-  local flag="$1"
+  local flag=${1:-'SILENT'}
   local tags
+  local cmd
 
-  tags=$(select_from 'tag WHERE "active" IS 1' '"id" AS "ID", "name" AS "Name"' '.mode column' 'id')
+  [[ "$flag" == 'VERBOSE' ]] && flag='CMD_SUBSTITUTION_VERBOSE'
+
+  tags=$(select_from 'tag WHERE "active" IS 1' '"id" AS "ID", "name" AS "Name"' '.mode column' 'id' "$flag")
   if [[ -z "$tags" ]]; then
     say 'You did not register any tag yet'
     return 0
@@ -103,11 +108,11 @@ function show_tags()
 # @tag: tag name
 function register_tag()
 {
-  local flag="$1"
+  local flag="${1:-SILENT}"
   local tag="$2"
 
   if ! is_tag_already_registered "$flag" "$tag"; then
-    insert_into 'tag' "('name')" "('${tag}')"
+    insert_into 'tag' "('name')" "('${tag}')" '' "$flag"
   fi
 }
 
@@ -121,11 +126,14 @@ function register_tag()
 # anything.
 function is_tag_already_registered()
 {
-  local flag="$1"
+  local flag="${1:-SILENT}"
   local tag_name="$2"
   local is_tag_registered=''
+  local cmd
 
-  is_tag_registered=$(select_from "tag WHERE name IS '${tag_name}'")
+  [[ "$flag" == 'VERBOSE' ]] && flag='CMD_SUBSTITUTION_VERBOSE'
+
+  is_tag_registered=$(select_from "tag WHERE name IS '${tag_name}'" '' '' '' "$flag")
 
   [[ -n "${is_tag_registered}" ]] && return 0
   return 1
@@ -158,6 +166,7 @@ function timer_thread()
 # the description (if there is one) in the local database.
 function register_data_for_report()
 {
+  local flag=${1:-'SILENT'}
   local start_date
   local start_time
   local duration
@@ -176,7 +185,7 @@ function register_data_for_report()
 
   # Format the data and insert it into the database
   formatted_data="$(format_values_db 5 "${values[@]}")"
-  insert_into '"pomodoro_report"' "$columns" "${formatted_data}"
+  insert_into '"pomodoro_report"' "$columns" "${formatted_data}" '' "$flag"
 }
 
 # This function checks if the time passed as argument is a valid one, i.e, is

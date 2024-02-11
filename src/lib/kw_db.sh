@@ -75,8 +75,10 @@ function insert_into()
   local entries="$2"
   local values="$3"
   local db="${4:-"$DB_NAME"}"
-  local db_folder="${5:-"$KW_DATA_DIR"}"
+  local flag=${5:-'SILENT'}
+  local db_folder="${6:-$KW_DATA_DIR}"
   local db_path
+  local cmd
 
   db_path="$(join_path "$db_folder" "$db")"
 
@@ -92,7 +94,8 @@ function insert_into()
 
   [[ -n "$entries" && ! "$entries" =~ ^\(.*\)$ ]] && entries="($entries)"
 
-  sqlite3 -init "$KW_DB_DIR/pre_cmd.sql" "$db_path" -batch "INSERT INTO $table $entries VALUES $values;"
+  cmd="sqlite3 -init "${KW_DB_DIR}/pre_cmd.sql" \"${db_path}\" -batch \"INSERT INTO ${table} ${entries} VALUES ${values};\""
+  cmd_manager "$flag" "$cmd"
 }
 
 # This function updates or insert rows into table of given database,
@@ -114,8 +117,10 @@ function replace_into()
   local columns="$2"
   local rows="$3"
   local db="${4:-"$DB_NAME"}"
-  local db_folder="${5:-"$KW_DATA_DIR"}"
+  local flag=${5:-'SILENT'}
+  local db_folder="${6:-"$KW_DATA_DIR"}"
   local db_path
+  local cmd
 
   db_path="$(join_path "$db_folder" "$db")"
 
@@ -131,7 +136,8 @@ function replace_into()
 
   [[ -n "$columns" && ! "$columns" =~ ^\(.*\)$ ]] && columns="($columns)"
 
-  sqlite3 -init "${KW_DB_DIR}/pre_cmd.sql" "${db_path}" -batch "REPLACE INTO ${table} ${columns} VALUES ${rows};"
+  cmd="sqlite3 -init "${KW_DB_DIR}/pre_cmd.sql" \"${db_path}\" -batch \"REPLACE INTO ${table} ${columns} VALUES ${rows};\""
+  cmd_manager "$flag" "$cmd"
 }
 
 # This function removes every matching row from a given table.
@@ -152,6 +158,7 @@ function remove_from()
   local -n _condition_array="$2"
   local db="${3:-"${DB_NAME}"}"
   local db_folder="${4:-"${KW_DATA_DIR}"}"
+  local flag=${5:-'SILENT'}
   local where_clause=''
   local db_path
 
@@ -174,11 +181,13 @@ function remove_from()
   # Remove trailing ' AND '
   where_clause="${where_clause::-5}"
 
-  sqlite3 -init "${KW_DB_DIR}/pre_cmd.sql" "${db_path}" -batch "DELETE FROM ${table} WHERE ${where_clause};"
+  cmd="sqlite3 -init "${KW_DB_DIR}/pre_cmd.sql" \"${db_path}\" -batch \"DELETE FROM ${table} WHERE ${where_clause};\""
+  cmd_manager "$flag" "$cmd"
 }
 
 # This function gets the values in the table of given database
 #
+# @flag:      Flag to control function output
 # @table:     Table to select info from
 # @columns:   Columns of the table to get
 # @pre_cmd:   Pre command to execute
@@ -195,10 +204,12 @@ function select_from()
   local columns="${2:-"*"}"
   local pre_cmd="$3"
   local order_by="$4"
-  local db="${5:-"$DB_NAME"}"
-  local db_folder="${6:-"$KW_DATA_DIR"}"
+  local flag=${5:-'SILENT'}
+  local db="${6:-$DB_NAME}"
+  local db_folder="${7:-$KW_DATA_DIR}"
   local db_path
   local query
+  local cmd
 
   db_path="$(join_path "$db_folder" "$db")"
 
@@ -216,7 +227,9 @@ function select_from()
   if [[ -n "${order_by}" ]]; then
     query="SELECT $columns FROM $table ORDER BY ${order_by} ;"
   fi
-  sqlite3 -init "$KW_DB_DIR/pre_cmd.sql" -cmd "$pre_cmd" "$db_path" -batch "$query"
+
+  cmd="sqlite3 -init ${KW_DB_DIR}/pre_cmd.sql -cmd \"${pre_cmd}\" \"${db_path}\" -batch \"${query}\""
+  cmd_manager "$flag" "$cmd"
 }
 
 # This function takes arguments and assembles them into the correct format to
