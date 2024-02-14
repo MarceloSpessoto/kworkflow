@@ -20,6 +20,8 @@ function setUp()
   mkdir -p "$KW_ETC_DIR"
   touch "${KW_ETC_DIR}/remote.config"
 
+  options_values['GLOBAL']=''
+
   cd "${SHUNIT_TMPDIR}" || {
     fail "($LINENO): setUp(): It was not possible to move into ${SHUNIT_TMPDIR}"
     return
@@ -35,7 +37,7 @@ function tearDown()
     return
   }
 
-  rm -rf "$BASE_PATH_KW"
+  rm -rf "$SHUNIT_TMPDIR"
 }
 
 function test_add_new_remote_wrong_number_of_parameters()
@@ -674,6 +676,7 @@ function test_list_global_remotes()
   output=$(list_remotes)
   compare_command_sequence 'Should list the global remote.config if there is no local one' "$LINENO" 'expected_result' "$output"
 }
+
 function test_global_option_rename_remote()
 {
   local final_result_array
@@ -699,6 +702,7 @@ function test_global_option_rename_remote()
   mapfile -t final_result_array < "${global_remote_config_file}"
   compare_array_values expected_result final_result_array "$LINENO"
 }
+
 function test_global_options_set_default_remote()
 {
   local final_result_array
@@ -724,6 +728,7 @@ function test_global_options_set_default_remote()
   mapfile -t final_result_array < "${global_remote_config_file}"
   compare_array_values expected_result final_result_array "$LINENO"
 }
+
 function test_global_option_list_remotes()
 {
   local final_result_array
@@ -749,12 +754,116 @@ function test_global_option_list_remotes()
   mapfile -t final_result_array < "${global_remote_config_file}"
   compare_array_values expected_result final_result_array "$LINENO"
 }
+
 function test_global_option_list_remote_invalid()
 {
   rm "${global_remote_config_file}"
   options_values['GLOBAL']='1'
   output=$(list_remotes)
   assertEquals "($LINENO)" "$?" 22
+}
+
+function setup_for_symbolic_link_test()
+{
+  local symlink="${BASE_PATH_KW}/remote.config"
+  local output
+  local base_value
+
+  # Specific test setup
+  read -r -d '' base_value << 'EOF'
+#kw-default=origin
+Host origin
+  Hostname test-debian
+  Port 3333
+  User root
+Host galactical
+  Hostname milky-way
+  Port 1234
+  User hubble
+Host global
+  Hostname planet-earth
+  Port 5678
+  User newton
+EOF
+  printf '%s\n' "$base_value" > "${BASE_PATH_KW}/remote.config"
+
+  # Remove global remote
+  mv "${SHUNIT_TMPDIR}/.config" "${SHUNIT_TMPDIR}/CONFIG"
+
+  # Convert .kw to KW for create a symbolic link
+  mv "$BASE_PATH_KW" "${SHUNIT_TMPDIR}/KW"
+
+  # Create new .kw folder
+  mkdir -p "$BASE_PATH_KW"
+  ln --symbolic "${SHUNIT_TMPDIR}/KW/remote.config" "${symlink}"
+}
+
+function test_ensure_add_remote_does_not_destroy_symbolic_link()
+{
+  local symlink="${BASE_PATH_KW}/remote.config"
+  local output
+
+  setup_for_symbolic_link_test
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'Symbolic link was not created' "$LINENO" 0 "$?"
+
+  options_values['PARAMETERS']='origin root@test-deb:4444'
+  output=$(add_new_remote)
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'After add a new remote, link was destroyed' "$LINENO" 0 "$?"
+}
+
+function test_ensure_set_default_remote_does_not_destroy_the_symbolic_link()
+{
+  local symlink="${BASE_PATH_KW}/remote.config"
+  local output
+
+  setup_for_symbolic_link_test
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'Symbolic link was not created' "$LINENO" 0 "$?"
+
+  options_values['DEFAULT_REMOTE']='galactical'
+  output=$(set_default_remote)
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'After set default, link was destroyed' "$LINENO" 0 "$?"
+}
+
+function test_ensure_remove_remote_does_not_destroy_the_symbolic_link()
+{
+  local symlink="${BASE_PATH_KW}/remote.config"
+  local output
+
+  setup_for_symbolic_link_test
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'Symbolic link was not created' "$LINENO" 0 "$?"
+
+  options_values['PARAMETERS']='origin'
+  output=$(remove_remote)
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'After remove remote, link was destroyed' "$LINENO" 0 "$?"
+}
+
+function test_ensure_rename_remote_does_not_destroy_the_symbolic_link()
+{
+  local symlink="${BASE_PATH_KW}/remote.config"
+  local output
+
+  setup_for_symbolic_link_test
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'Symbolic link was not created' "$LINENO" 0 "$?"
+
+  options_values['PARAMETERS']='origin end'
+  output=$(rename_remote)
+
+  [[ -L "$symlink" ]]
+  assert_equals_helper 'After rename remote, link was destroyed' "$LINENO" 0 "$?"
 }
 
 invoke_shunit
