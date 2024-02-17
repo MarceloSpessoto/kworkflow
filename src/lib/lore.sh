@@ -361,11 +361,8 @@ function compose_lore_query_url_with_verification()
     return 22 # EINVAL
   fi
 
-  # TODO: We need to use the query prefix 's:Re:' to filter out replies and match
-  # only real patches. Are we filtering possible patches? If no, can we filter more
-  # messages to obtain a lighter response file?
-  query_filter="?x=A&o=${min_index}&q=rt:..+AND+NOT+s:Re"
-  [[ -n "$additional_filters" ]] && query_filter+="+AND+${additional_filters}"
+  query_filter="?x=A&o=${min_index}&q=((s:patch+OR+s:rfc)+AND+NOT+s:re:)"
+  [[ -n "$additional_filters" ]] && query_filter+="+AND+(${additional_filters})"
   query_url="${LORE_URL}/${target_mailing_list}/${query_filter}"
   printf '%s' "$query_url"
 }
@@ -917,18 +914,23 @@ function parse_raw_patchset_data()
 # This function gets the bookmark status of a patchset, 0 being not in the local
 # bookmarked database and 1 being in the local bookmarked database.
 #
-# @patchset_url: The URL of the patchset that identifies the entry in the local
+# @message_id: The URL of the patchset that identifies the entry in the local
 #   bookmarked database
+#
+# Return:
+# Returns 22 (EINVAL)
 function get_patchset_bookmark_status()
 {
-  local patchset_url="$1"
+  local message_id="$1"
   local count
+
+  [[ -z "$message_id" ]] && return 22 # EINVAL
 
   if [[ ! -f "${BOOKMARKED_SERIES_PATH}" ]]; then
     create_lore_bookmarked_file
   fi
 
-  count=$(grep --count "$patchset_url" "${BOOKMARKED_SERIES_PATH}")
+  count=$(grep --count "$message_id" "${BOOKMARKED_SERIES_PATH}")
   if [[ "$count" == 0 ]]; then
     printf '%s' 0
   else
