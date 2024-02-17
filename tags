@@ -2329,8 +2329,6 @@ show_settings_screen	kworkflow/src/ui/patch_hub/settings.sh	/^function show_sett
 show_settings_screen	src/ui/patch_hub/settings.sh	/^function show_settings_screen()$/;"	f
 show_tags	kworkflow/src/pomodoro.sh	/^function show_tags()$/;"	f
 show_tags	src/pomodoro.sh	/^function show_tags()$/;"	f
-show_variables_main	kworkflow/src/lib/kw_config_loader.sh	/^function show_variables_main()$/;"	f
-show_variables_main	src/lib/kw_config_loader.sh	/^function show_variables_main()$/;"	f
 show_verbose	kworkflow/src/device_info.sh	/^function show_verbose()$/;"	f
 show_verbose	src/lib/kwlib.sh	/^function show_verbose()$/;"	f
 show_vm_variables	kworkflow/src/lib/kw_config_loader.sh	/^function show_vm_variables()$/;"	f
@@ -3548,10 +3546,6 @@ test_show_settings_screen	kworkflow/tests/ui/patch_hub/settings_test.sh	/^functi
 test_show_settings_screen	tests/unit/ui/patch_hub/settings_test.sh	/^function test_show_settings_screen()$/;"	f
 test_show_tags	kworkflow/tests/pomodoro_test.sh	/^function test_show_tags()$/;"	f
 test_show_tags	tests/unit/pomodoro_test.sh	/^function test_show_tags()$/;"	f
-test_show_variables_main_completeness	kworkflow/tests/lib/kw_config_loader_test.sh	/^function test_show_variables_main_completeness()$/;"	f
-test_show_variables_main_completeness	tests/unit/lib/kw_config_loader_test.sh	/^function test_show_variables_main_completeness()$/;"	f
-test_show_variables_main_correctness	kworkflow/tests/lib/kw_config_loader_test.sh	/^function test_show_variables_main_correctness()$/;"	f
-test_show_variables_main_correctness	tests/unit/lib/kw_config_loader_test.sh	/^function test_show_variables_main_correctness()$/;"	f
 test_show_verbose	tests/unit/lib/kwlib_test.sh	/^function test_show_verbose()$/;"	f
 test_show_verbose_no_verbose	tests/unit/lib/kwlib_test.sh	/^function test_show_verbose_no_verbose()$/;"	f
 test_signal_reset	kworkflow/tests/lib/signal_manager_test.sh	/^function test_signal_reset()$/;"	f
