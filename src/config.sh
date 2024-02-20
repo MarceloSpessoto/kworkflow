@@ -60,7 +60,7 @@ function config_main()
   if [[ "$?" != 0 ]]; then
     complain "Invalid options: ${parameters}"
     complain "Try: target_config.option value"
-    return 22 # EINVAL
+    return 10 # EINVAL
   fi
 
   # option value
