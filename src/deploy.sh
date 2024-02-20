@@ -50,42 +50,6 @@ declare -gA target_deploy_info
 # From kw perspective, deploy a new kernel is composed of two steps: install
 # modules and update kernel image. I chose this approach for reducing the
 # chances of break the system due to modules and kernel mismatch. This function
-# is responsible for handling some of the userspace options and calls the
-# required functions to update the kernel. This function handles a different
-# set of parameters for the distinct set of target machines.
-#
-# @build_and_deploy If the user uses `kw bd` we can safely copy the local
-#                   .config file.
-#
-# Note: I know that developer know what they are doing (usually) and in the
-# future, it will be nice if we support single kernel update (patches are
-# welcome).
-#
-# Note: This function relies on the parameters set in the config file.
-function deploy_main()
-{
-  local build_and_deploy="$1"
-  local reboot=0
-  local modules=0
-  local target=0
-  local list=0
-  local single_line=0
-  local uninstall=''
-  local start=0
-  local end=0
-  local runtime=0
-  local ret=0
-  local list_all
-  local setup
-  local flag
-  local modules_install_status
-  local env_name
-  local output_kbuild_path=''
-  local return_tar_path
-  local kernel_binary_image_name
-  local cache_to_deploy_path
-
-  # Drop build_and_deploy flag
   shift
 
   if [[ "$1" =~ -h|--help ]]; then
