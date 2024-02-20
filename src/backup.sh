@@ -37,10 +37,6 @@ function backup()
   fi
 }
 
-# This function creates a .tar.gz file containing all the data found in
-# KW_DATA_DIR
-#
-# @path Path to the directory in which the compressed file should be stored.
 function create_backup()
 {
   local path="$1"
@@ -69,10 +65,6 @@ function create_backup()
   success 'Backup successfully created at' "$path/$file_name"
 }
 
-# This function restores a previous backup by extracting it back into
-# KW_DATA_DIR.
-#
-# #path Path to the .tar.gz containing kw data
 function restore_backup()
 {
   local path="$1"
