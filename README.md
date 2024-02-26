@@ -16,7 +16,7 @@ Take a look at
 [Install and Uninstall](documentation/content/installanduninstall.rst).
 
 # How to
-
+aaaaaaaaaaaaaaaaaaaaaaa
 If you want to know more about kw's usage and its commands, take a look at
 [Kw man](documentation/man/kw.rst) or, with kw installed, run `kw man`.
 
