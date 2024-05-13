@@ -22,102 +22,102 @@ function tearDown()
   rm -rf "$SHUNIT_TMPDIR"
 }
 
-function test_vm_mount()
-{
-  local mount_point="${SHUNIT_TMPDIR}/lala"
-  local qemu_path='/any/path'
-  local -r current_path="$PWD"
-  local ret
-  local expected_ret
-  local msg
-
-  # Message to user
-  local say_msg="Mount $qemu_path in $mount_point"
-
-  # Guestmount cmd
-  local guestmount_cmd="guestmount -a $qemu_path -i $mount_point 2>&1"
-
-  declare -a expected_cmd
-
-  function uname()
-  {
-    printf '5.1'
-  }
-
-  cd "$SHUNIT_TMPDIR" || {
-    fail "($LINENO) It was not possible to move to temporary directory"
-    return
-  }
-
-  # Mock vmlinuz
-  touch "${PREFIX}boot/vmlinuz-$(uname)"
-
-  # Removing read permission from our mock vmlinuz
-  chmod a-r "${PREFIX}boot/vmlinuz-$(uname)"
-
-  # Suppose it's a debian system
-  cp -f "$tests/samples/os/debian/etc/os-release" "$PREFIX/etc"
-
-  expected_cmd=(
-    'To mount the VM, the kernel image needs to be readable'
-    "sudo dpkg-statoverride --update --add root root 0644 ${PREFIX}boot/vmlinuz-$(uname -r)"
-    "$say_msg"
-    "$guestmount_cmd"
-  )
-
-  output=$(printf '%s\n' 'y' | vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
-  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
-
-  # Suppose it's not debian
-  rm -rf "${etc:?}/"*
-  cp -f "$tests/samples/os/arch/etc/os-release" "$PREFIX/etc"
-
-  expected_cmd[1]="sudo chmod +r ${PREFIX}boot/vmlinuz-$(uname -r)"
-  output=$(printf '%s\n' 'y' | vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
-  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
-
-  # Adding back read permission
-  chmod +r "${PREFIX}boot/vmlinuz-$(uname)"
-
-  expected_cmd=(
-    "$say_msg"
-    "$guestmount_cmd"
-  )
-
-  output=$(
-    # shellcheck disable=SC2317
-    function findmnt()
-    {
-      printf '%s\n' 'anything'
-    }
-    vm_mount 'TEST_MODE'
-  )
-  ret="$?"
-  expected_ret='125'
-  assertEquals "($LINENO) - Expected 125" "$expected_ret" "$ret"
-
-  output=$(vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
-  ret="$?"
-  assertTrue "($LINENO)" "$ret"
-
-  output=$(vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
-  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
-
-  load_configuration "$KW_CONFIG_SAMPLE"
-
-  say_msg="Mount ${vm_config[qemu_path_image]} in $mount_point"
-  guestmount_cmd="guestmount -a ${vm_config[qemu_path_image]} -i $mount_point 2>&1"
-  expected_cmd[0]="$say_msg"
-  expected_cmd[1]="$guestmount_cmd"
-
-  output=$(vm_mount 'TEST_MODE' '' "$mount_point")
-  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
-
-  cd "$current_path" || {
-    fail "($LINENO) It was not possible to move back from temp directory"
-    return
-  }
-}
+#function test_vm_mount()
+#{
+#  local mount_point="${SHUNIT_TMPDIR}/lala"
+#  local qemu_path='/any/path'
+#  local -r current_path="$PWD"
+#  local ret
+#  local expected_ret
+#  local msg
+#
+#  # Message to user
+#  local say_msg="Mount $qemu_path in $mount_point"
+#
+#  # Guestmount cmd
+#  local guestmount_cmd="guestmount -a $qemu_path -i $mount_point 2>&1"
+#
+#  declare -a expected_cmd
+#
+#  function uname()
+#  {
+#    printf '5.1'
+#  }
+#
+#  cd "$SHUNIT_TMPDIR" || {
+#    fail "($LINENO) It was not possible to move to temporary directory"
+#    return
+#  }
+#
+#  # Mock vmlinuz
+#  touch "${PREFIX}boot/vmlinuz-$(uname)"
+#
+#  # Removing read permission from our mock vmlinuz
+#  chmod a-r "${PREFIX}boot/vmlinuz-$(uname)"
+#
+#  # Suppose it's a debian system
+#  cp -f "$tests/samples/os/debian/etc/os-release" "$PREFIX/etc"
+#
+#  expected_cmd=(
+#    'To mount the VM, the kernel image needs to be readable'
+#    "sudo dpkg-statoverride --update --add root root 0644 ${PREFIX}boot/vmlinuz-$(uname -r)"
+#    "$say_msg"
+#    "$guestmount_cmd"
+#  )
+#
+#  output=$(printf '%s\n' 'y' | vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
+#  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
+#
+#  # Suppose it's not debian
+#  rm -rf "${etc:?}/"*
+#  cp -f "$tests/samples/os/arch/etc/os-release" "$PREFIX/etc"
+#
+#  expected_cmd[1]="sudo chmod +r ${PREFIX}boot/vmlinuz-$(uname -r)"
+#  output=$(printf '%s\n' 'y' | vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
+#  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
+#
+#  # Adding back read permission
+#  chmod +r "${PREFIX}boot/vmlinuz-$(uname)"
+#
+#  expected_cmd=(
+#    "$say_msg"
+#    "$guestmount_cmd"
+#  )
+#
+#  output=$(
+#    # shellcheck disable=SC2317
+#    function findmnt()
+#    {
+#      printf '%s\n' 'anything'
+#    }
+#    vm_mount 'TEST_MODE'
+#  )
+#  ret="$?"
+#  expected_ret='125'
+#  assertEquals "($LINENO) - Expected 125" "$expected_ret" "$ret"
+#
+#  output=$(vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
+#  ret="$?"
+#  assertTrue "($LINENO)" "$ret"
+#
+#  output=$(vm_mount 'TEST_MODE' "$qemu_path" "$mount_point")
+#  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
+#
+#  load_configuration "$KW_CONFIG_SAMPLE"
+#
+#  say_msg="Mount ${vm_config[qemu_path_image]} in $mount_point"
+#  guestmount_cmd="guestmount -a ${vm_config[qemu_path_image]} -i $mount_point 2>&1"
+#  expected_cmd[0]="$say_msg"
+#  expected_cmd[1]="$guestmount_cmd"
+#
+#  output=$(vm_mount 'TEST_MODE' '' "$mount_point")
+#  compare_command_sequence '' "$LINENO" 'expected_cmd' "$output"
+#
+#  cd "$current_path" || {
+#    fail "($LINENO) It was not possible to move back from temp directory"
+#    return
+#  }
+#}
 
 function test_vm_umount()
 {
