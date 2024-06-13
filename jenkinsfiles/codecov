@@ -6,7 +6,8 @@ pipeline {
       steps{
         sh '''
           apt update -y
-          apt install -y shunit2 bc sqlite3 bsdmainutils libxml-xpath-perl
+          apt install -y shunit2 bc sqlite3 bsdmainutils libxml-xpath-perl wget rsync
+          ./setup.sh -i --force
           ./run_tests.sh prepare
           rm -rf kcov_out
           mkdir kcov_out/
