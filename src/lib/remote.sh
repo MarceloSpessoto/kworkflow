@@ -67,7 +67,7 @@ function is_ssh_connection_configured()
       ret="$?"
 
       # User canceled the manual update
-      [[ "$ret" == 125 ]] && return 125
+      [[ "$ret" == 125 ]] && return 125 # ECANCELED
       # Some other unknown error occurred
       [[ "$ret" != 0 ]] && return 101 # ENETUNREACH
 
@@ -246,8 +246,8 @@ function ssh_connection_failure_message()
 # If no command is specified, we finish the execution and return 22
 function cmd_remotely()
 {
-  local command="$1"
-  local flag=${2:-'HIGHLIGHT_CMD'}
+  local flag=${1:-'HIGHLIGHT_CMD'}
+  local command="$2"
   local remote=${3:-${remote_parameters['REMOTE_IP']}}
   local port=${4:-${remote_parameters['REMOTE_PORT']}}
   local user=${5:-${remote_parameters['REMOTE_USER']}}
@@ -371,7 +371,7 @@ function which_distro()
   local output
 
   cmd='cat /etc/os-release'
-  output=$(cmd_remotely "$cmd" "$flag" "$remote" "$port" "$user")
+  output=$(cmd_remotely "$flag" "$cmd" "$remote" "$port" "$user")
   # TODO: I think we can find a better way to test this...
   if [[ "$flag" =~ 'TEST_MODE' ]]; then
     printf '%s' "$output"

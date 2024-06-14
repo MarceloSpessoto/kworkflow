@@ -16,13 +16,13 @@ function oneTimeSetUp()
   touch "${test_files[@]}"
 
   # the next files will be checked for name collisions
-  printf "%s\n" "function test1(){ printf '%s\n' 'output of test1';}" > \
-    "$SHUNIT_TMPDIR/include_test_similar_path.sh"
+  printf "%s\n" "function test1(){ printf '%s\n' 'output of test1';}" > "\
+$SHUNIT_TMPDIR/include_test_similar_path.sh"
 
   mkdir "$SHUNIT_TMPDIR/include_test"
 
-  printf "%s\n" "function test2(){ printf '%s\n' 'output of test2';}" > \
-    "$SHUNIT_TMPDIR/include_test/similar_path.sh"
+  printf "%s\n" "function test2(){ printf '%s\n' 'output of test2';}" > "\
+$SHUNIT_TMPDIR/include_test/similar_path.sh"
 }
 
 function oneTimeTearDown()
@@ -80,8 +80,8 @@ function test_include_similar_paths()
   test1_expected='output of test1'
   test2_expected='output of test2'
 
-  assertEquals "($LINENO)" "$test1_output" "$test1_expected"
-  assertEquals "($LINENO)" "$test2_output" "$test2_expected"
+  assertEquals "($LINENO)" "$test1_expected" "$test1_output"
+  assertEquals "($LINENO)" "$test2_expected" "$test2_output"
 }
 
 invoke_shunit

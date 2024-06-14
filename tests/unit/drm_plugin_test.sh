@@ -26,6 +26,9 @@ function setUp()
 
   # Parser default config file for the average case
   parse_configuration "$KW_CONFIG_SAMPLE"
+
+  export bind_cmd='for i in /sys/class/vtconsole/*/bind; do printf "%s\n" 1 > $i; done; sleep 0.5'
+  export unbind_cmd='for i in /sys/class/vtconsole/*/bind; do printf "%s\n" 0 > $i; done; sleep 0.5'
 }
 
 function tearDown()
@@ -63,10 +66,13 @@ function mk_fake_sys_class_drm()
 
   for dir in "${fake_dirs[@]}"; do
     mkdir -p "${FAKE_DRM_SYSFS}/${dir}"
+    printf disabled > "${FAKE_DRM_SYSFS}/${dir}/enabled"
   done
 
   touch "${FAKE_DRM_SYSFS}/version"
   touch "${FAKE_DRM_SYSFS}/card0-DP-3/modes"
+  printf enabled > "${FAKE_DRM_SYSFS}/card0-DVI-D-1/enabled"
+  printf enabled > "${FAKE_DRM_SYSFS}/card1-HDMI-A-2/enabled"
 
   cat << END >> "${FAKE_DRM_SYSFS}/card0-DP-3/modes"
 1920x2160
@@ -110,6 +116,8 @@ function test_drm_parser_options()
 
   assertEquals "($LINENO)" '' "${options_values['GUI_ON']}"
   assertEquals "($LINENO)" '' "${options_values['GUI_OFF']}"
+  assertEquals "${LINENO}" '' "${options_values['GUI_ON_AFTER_REBOOT']}"
+  assertEquals "${LINENO}" '' "${options_values['GUI_OFF_AFTER_REBOOT']}"
   assertEquals "($LINENO)" '' "${options_values['CONN_AVAILABLE']}"
   assertEquals "($LINENO)" '' "${options_values['MODES_AVAILABLE']}"
 
@@ -119,8 +127,14 @@ function test_drm_parser_options()
   parse_drm_options --gui-off
   assertEquals "($LINENO)" 1 "${options_values['GUI_OFF']}"
 
+  parse_drm_options --gui-on-after-reboot
+  assertEquals "${LINENO}" 1 "${options_values['GUI_ON_AFTER_REBOOT']}"
+
+  parse_drm_options --gui-off-after-reboot
+  assertEquals "${LINENO}" 1 "${options_values['GUI_OFF_AFTER_REBOOT']}"
+
   parse_drm_options --verbose
-  assertEquals "($LINENO)" 1 "${options_values['VERBOSE']}"
+  assertEquals "${LINENO}" 1 "${options_values['VERBOSE']}"
 
   parse_drm_options --conn-available
   assertEquals "($LINENO)" 1 "${options_values['CONN_AVAILABLE']}"
@@ -159,8 +173,6 @@ function test_gui_control_remote()
 {
   local gui_on_cmd='systemctl isolate graphical.target'
   local gui_off_cmd='systemctl isolate multi-user.target'
-  local bind_cmd='for i in /sys/class/vtconsole/*/bind; do printf "%s\n" 1 > $i; done; sleep 0.5'
-  local unbind_cmd='for i in /sys/class/vtconsole/*/bind; do printf "%s\n" 0 > $i; done; sleep 0.5'
   local output
 
   # Remote
@@ -170,7 +182,7 @@ function test_gui_control_remote()
 
   tearDown # We want to test the default cases first
   # REMOTE = 3
-  ssh_part="ssh -p 8888 juca@127.0.0.1"
+  ssh_part='ssh -p 8888 juca@127.0.0.1'
   full_turn_on_gui_cmd="${ssh_part} sudo \"${gui_on_cmd}\""
   full_bind_cmd="${ssh_part} 'sudo bash -c '\''${bind_cmd}'\'"
 
@@ -225,16 +237,113 @@ function test_gui_control_remote()
   compare_command_sequence '' "$LINENO" 'expected_cmd_seq' "$output"
 }
 
+function test_gui_control_on_after_reboot_local()
+{
+  local gui_on_after_reboot_cmd='systemctl set-default graphical.target'
+  local output
+
+  # Remote
+  remote_parameters['REMOTE_IP']='127.0.0.1'
+  remote_parameters['REMOTE_PORT']='8888'
+  remote_parameters['REMOTE_USER']='juca'
+
+  tearDown # We want to test the default cases first
+
+  ssh_part='ssh -p 8888 juca@127.0.0.1'
+  full_turn_on_gui_after_reboot_cmd="${ssh_part} sudo \"${gui_on_after_reboot_cmd}\""
+  full_bind_cmd="${ssh_part} 'sudo bash -c '\''${bind_cmd}'\'"
+
+  declare -a expected_cmd_seq=(
+    "$full_turn_on_gui_after_reboot_cmd"
+    "$full_bind_cmd"
+  )
+
+  output=$(gui_control 'ON_AFTER_REBOOT' '3' '127.0.0.1:8888' 'TEST_MODE')
+  compare_command_sequence '' "${LINENO}" 'expected_cmd_seq' "${output}"
+
+  # Test with config file
+  parse_configuration "$KW_CONFIG_SAMPLE"
+
+  # Remote
+  remote_parameters['REMOTE_PORT']='3333'
+
+  ssh_part="ssh -p 3333 juca@127.0.0.1"
+
+  gui_on_after_reboot_cmd='turn on after reboot'
+  full_turn_on_gui_after_reboot_cmd="${ssh_part} sudo \"${gui_on_after_reboot_cmd}\""
+  full_bind_cmd="${ssh_part} 'sudo bash -c '\''${bind_cmd}'\'"
+
+  declare -a expected_cmd_seq=(
+    "$full_turn_on_gui_after_reboot_cmd"
+    "$full_bind_cmd"
+  )
+
+  output=$(gui_control 'ON_AFTER_REBOOT' '3' '' 'TEST_MODE')
+  compare_command_sequence '' "${LINENO}" 'expected_cmd_seq' "${output}"
+
+}
+
+function test_gui_control_off_after_reboot_local()
+{
+  local gui_off_after_reboot_cmd='systemctl set-default multi-user.target'
+  local output
+
+  # Remote
+  remote_parameters['REMOTE_IP']='127.0.0.1'
+  remote_parameters['REMOTE_PORT']='8888'
+  remote_parameters['REMOTE_USER']='juca'
+
+  tearDown # We want to test the default cases first
+
+  ssh_part='ssh -p 8888 juca@127.0.0.1'
+
+  full_turn_off_gui_after_reboot_cmd="${ssh_part} sudo \"${gui_off_after_reboot_cmd}\""
+  full_unbind_cmd="$ssh_part 'sudo bash -c '\''${unbind_cmd}'\'"
+
+  declare -a expected_cmd_seq=(
+    "$full_turn_off_gui_after_reboot_cmd"
+    "$full_unbind_cmd"
+  )
+
+  output=$(gui_control 'OFF_AFTER_REBOOT' '3' '127.0.0.1:8888' 'TEST_MODE')
+  compare_command_sequence '' "${LINENO}" 'expected_cmd_seq' "${output}"
+
+  # Test with config file
+  parse_configuration "$KW_CONFIG_SAMPLE"
+
+  # Remote
+  remote_parameters['REMOTE_PORT']='3333'
+
+  ssh_part="ssh -p 3333 juca@127.0.0.1"
+
+  gui_off_after_reboot_cmd='turn off after reboot'
+  full_turn_off_gui_after_reboot_cmd="${ssh_part} sudo \"${gui_off_after_reboot_cmd}\""
+  full_unbind_cmd="${ssh_part} 'sudo bash -c '\''${unbind_cmd}'\'"
+
+  declare -a expected_cmd_seq=(
+    "$full_turn_off_gui_after_reboot_cmd"
+    "$full_unbind_cmd"
+  )
+
+  output=$(gui_control 'OFF_AFTER_REBOOT' '3' '' 'TEST_MODE')
+  compare_command_sequence '' "${LINENO}" 'expected_cmd_seq' "${output}"
+
+}
+
 function test_gui_control_local()
 {
   local gui_on_cmd='systemctl isolate graphical.target'
   local gui_off_cmd='systemctl isolate multi-user.target'
+  local gui_on_after_reboot_cmd='systemctl set-default graphical.target'
+  local gui_off_after_reboot_cmd='systemctl set-default multi-user.target'
   local bind_cmd='for i in /sys/class/vtconsole/*/bind; do printf "%s\n" 1 > $i; done; sleep 0.5'
   local unbind_cmd='for i in /sys/class/vtconsole/*/bind; do printf "%s\n" 0 > $i; done; sleep 0.5'
   local output
 
   configurations[gui_on]="$gui_on_cmd"
   configurations[gui_off]="$gui_off_cmd"
+  configurations[gui_on_after_reboot]="$gui_on_after_reboot_cmd"
+  configurations[gui_off_after_reboot]="$gui_off_after_reboot_cmd"
 
   declare -a expected_cmd_seq=(
     "sudo ${gui_on_cmd}"
@@ -251,6 +360,25 @@ function test_gui_control_local()
 
   output=$(gui_control 'OFF' '2' '' 'TEST_MODE')
   compare_command_sequence '' "$LINENO" 'expected_cmd_seq' "$output"
+
+  # Test GUI ON after reboot
+  declare -a expected_cmd_seq=(
+    "sudo ${gui_on_after_reboot_cmd}"
+    "sudo ${bind_cmd}"
+  )
+
+  output=$(gui_control 'ON_AFTER_REBOOT' '2' '' 'TEST_MODE')
+  compare_command_sequence '' "$LINENO" 'expected_cmd_seq' "$output"
+
+  # Test GUI OFF after reboot
+  declare -a expected_cmd_seq=(
+    "sudo ${gui_off_after_reboot_cmd}"
+    "sudo ${unbind_cmd}"
+  )
+
+  output=$(gui_control 'OFF_AFTER_REBOOT' '2' '' 'TEST_MODE')
+  compare_command_sequence '' "$LINENO" 'expected_cmd_seq' "$output"
+
 }
 
 function test_get_available_connectors_local()
@@ -259,16 +387,16 @@ function test_get_available_connectors_local()
 
   declare -a expected_output=(
     '[local] Card1 supports:'
-    'DP'
-    'DP'
-    'DP'
-    'HDMI'
+    'DP-4'
+    'DP-5'
+    'DP-6'
+    'HDMI-A-2 *'
     '[local] Card0 supports:'
-    'DP'
-    'DP'
-    'DP'
-    'DVI'
-    'HDMI'
+    'DP-1'
+    'DP-2'
+    'DP-3'
+    'DVI-D-1 *'
+    'HDMI-A-1'
   )
 
   # Local
@@ -276,6 +404,7 @@ function test_get_available_connectors_local()
   compare_command_sequence '' "$LINENO" 'expected_output' "$output"
 }
 
+# shellcheck disable=SC2317  # Disable shellchek warning about unreachable commands in this function
 function test_get_available_connectors_remote()
 {
   local output
@@ -284,16 +413,16 @@ function test_get_available_connectors_remote()
   output=$(
     function cmd_remotely()
     {
-      printf '/sys/class/drm/card0-%s-1\n' 'DP'
-      printf '/sys/class/drm/card0-%s-1\n' 'eDP'
+      printf '/sys/class/drm/card0-%s,enabled\n' 'DP-1'
+      printf '/sys/class/drm/card0-%s,disabled\n' 'eDP-1'
     }
     get_available_connectors '3' '' 'TEST_MODE'
   )
 
   declare -a expected_output=(
     '[remote] Card0 supports:'
-    'DP'
-    'eDP'
+    'DP-1 *'
+    'eDP-1'
   )
   compare_command_sequence '' "$LINENO" 'expected_output' "$output"
 }
@@ -396,7 +525,7 @@ function test_convert_module_info()
   assertEquals "$LINENO" "$expected" "$output"
 
   output=$(convert_module_info "LOAD" "")
-  assertEquals "$LINENO" "$?" "22"
+  assertEquals "$LINENO" 22 "$?"
 }
 
 invoke_shunit

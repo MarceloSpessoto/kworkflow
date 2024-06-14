@@ -21,7 +21,7 @@ function _kw_autocomplete()
   kw_options['init']='--arch --remote --target --force --template --verbose'
 
   kw_options['build']='--help --info --menu --cpu-scaling --ccache --llvm --clean
-                       --full-cleanup --verbose --doc --warnings --save-log-to --cflags'
+                       --full-cleanup --verbose --doc --warnings --save-log-to --cflags --from-sha'
 
   kw_options['b']="${kw_options['build']}"
 
@@ -53,7 +53,7 @@ function _kw_autocomplete()
 
   kw_options['remote']='--add --remove --rename --list --global --set-default --verbose'
 
-  kw_options['explore']='--log --grep --all --only-header --only-source --exactly --verbose'
+  kw_options['explore']='--log --grep --all --only-header --only-source --exactly --show-context --verbose'
   kw_options['e']="${kw_options['explore']}"
 
   kw_options['pomodoro']='--set-timer --check-timer --show-tags --tag --description --help --verbose'
@@ -78,8 +78,8 @@ function _kw_autocomplete()
 
   kw_options['patch-hub']='--help'
 
-  kw_options['drm']='--remote --local --gui-on --gui-off --load-module
-                     --unload-module --conn-available --modes --verbose --help'
+  kw_options['drm']='--remote --local --gui-on --gui-off --gui-on-after-reboot --gui-off-after-reboot
+                     --load-module --unload-module --conn-available --modes --verbose --help'
 
   kw_options['vm']='--mount --umount --up --alert --help'
 
