@@ -1,0 +1,17 @@
+pipeline {
+  agent { dockerfile true }
+  stages {
+
+    stage('Build'){
+      steps{
+        sh '''
+          apt update -y
+          apt install -y shunit2 bc sqlite3 bsdmainutils libxml-xpath-perl wget rsync
+          ./setup.sh -i --force
+          ./run_tests.sh
+        '''
+      }
+    }
+
+  }
+}

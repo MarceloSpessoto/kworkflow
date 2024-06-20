@@ -1,0 +1,18 @@
+pipeline {
+  agent {
+    dockerfile true  
+  }
+  stages {
+
+    stage('Build'){
+      steps{
+        sh '''
+          apt update -y
+          apt install -y shfmt
+          shfmt -i=2 -ln=bash -fn -ci -sr -d .
+        '''
+      }
+    }
+
+  }
+}
