@@ -5,8 +5,8 @@ pipeline {
     stage('Build'){
       steps{
         sh '''
-          apt update -y
-          apt install -y shfmt
+          sudo apt update -y
+          sudo apt install -y shfmt
           shfmt -i=2 -ln=bash -fn -ci -sr -d .
         '''
       }
