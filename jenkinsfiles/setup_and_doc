@@ -1,11 +1,10 @@
 pipeline {
-  agent { label 'docker-agent' }
+  agent { label 'install-and-setup-agent' }
   stages {
 
     stage('Build'){
       steps{
         sh '''
-          apt install -y python3-docutils python3-sphinx graphviz
           ./setup.sh --docs --force
           ./setup.sh -i --force
         '''

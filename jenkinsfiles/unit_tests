@@ -1,14 +1,12 @@
 pipeline {
-  agent { label 'docker-agent' }
+  agent { label 'basic-agent' }
   stages {
 
     stage('Build'){
       steps{
         sh '''
-          sudo apt update -y
-          sudo apt install -y shunit2 bc sqlite3 bsdmainutils libxml-xpath-perl wget rsync
           sudo ./setup.sh -i --force
-          ./run_tests.sh
+          ./run_tests.sh --unit
         '''
       }
     }
