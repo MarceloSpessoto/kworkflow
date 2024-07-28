@@ -1,11 +1,10 @@
 pipeline {
-  agent { label 'install-and-setup-agent' }
+  agent { label 'basic-agent' }
   stages {
 
     stage('Build'){
       steps{
         sh '''
-          sudo apt-get install -y python3 pip python3.11-venv
           ./setup.sh --docs --force
           ./setup.sh -i --force
         '''

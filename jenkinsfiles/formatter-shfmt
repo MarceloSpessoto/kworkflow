@@ -4,11 +4,7 @@ pipeline {
 
     stage('Build'){
       steps{
-        sh '''
-          sudo apt update -y
-          sudo apt install -y shfmt
-          shfmt -i=2 -ln=bash -fn -ci -sr -d .
-        '''
+        sh 'shfmt -i=2 -ln=bash -fn -ci -sr -d .'
       }
     }
 
