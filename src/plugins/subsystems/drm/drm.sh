@@ -21,7 +21,7 @@ function drm_main()
   local test_mode
   local flag
 
-  if [[ "$*" =~ -h|--help ]]; then
+  if [[ "$*" =~ -h|--help || "$#" == 0 ]]; then
     drm_help "$*"
     exit 0
   fi
@@ -60,8 +60,10 @@ function drm_main()
   if [[ -n "$load_module" ]]; then
     module_control 'LOAD' "$target" "$remote" "$load_module" "$flag"
     if [[ "$?" != 0 ]]; then
+      complain "Failure to load module ${load_module}"
       return 22 # EINVAL
     fi
+    success "Successfully loaded module ${load_module}"
   fi
 
   if [[ "$gui_on" == 1 ]]; then
@@ -78,6 +80,11 @@ function drm_main()
     # For unload DRM drivers, we need to make sure that we turn off user GUI
     [[ "$gui_off" != 1 ]] && gui_control 'OFF' "$target" "$remote"
     module_control 'UNLOAD' "$target" "$remote" "$unload_module" "$flag"
+    if [[ "$?" != 0 ]]; then
+      complain "Failure to unload module ${unload_module}"
+      return 22 # EINVAL
+    fi
+    success "Successfully unloaded module ${unload_module}"
   fi
 
   if [[ "$conn_available" == 1 ]]; then
@@ -298,8 +305,8 @@ function get_available_connectors()
   case "$target" in
     2) # LOCAL TARGET
       cards_raw_list=$(cmd_manager 'SILENT' "$find_conn_cmd" | sort --dictionary-order)
+      ret="$?"
       if [[ -f "$SYSFS_CLASS_DRM" ]]; then
-        ret="$?"
         complain "We cannot access ${SYSFS_CLASS_DRM}"
         return "$ret" # ENOENT
       fi
@@ -524,8 +531,8 @@ function drm_help()
     return
   fi
   printf '%s\n' 'Usage: kw drm [options]:' \
-    '  drm [--local | --remote [<remote>:<port>]] (-lm|--load-module)=<module>[:<param1>,<param2>][;<module>:...][;...]' \
-    '  drm [--local | --remote [<remote>:<port>]] (-um|--unload-module)=<module>[;<module>;...]' \
+    '  drm [--local | --remote [<remote>:<port>]] --load-module=<module>[:<param1>,<param2>][;<module>:...][;...]' \
+    '  drm [--local | --remote [<remote>:<port>]] --unload-module=<module>[;<module>;...]' \
     '  drm [--local | --remote [<remote>:<port>]] --gui-on' \
     '  drm [--local | --remote [<remote>:<port>]] --gui-off' \
     '  drm [--local | --remote [<remote>:<port>]] --gui-on-after-reboot' \

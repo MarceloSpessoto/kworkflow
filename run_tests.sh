@@ -6,9 +6,10 @@ include './tests/integration/utils.sh'
 include './src/lib/kwio.sh'
 
 declare -a TESTS
-declare TESTS_DIR
-declare TESTS_UNIT=1
-declare TESTS_INTEGRATION=1
+declare TESTS_DIR=''
+declare CLEAR_INTEGRATION_CACHE=0
+declare CLEAR_UNIT_CACHE=0
+declare VERBOSE=0
 
 function show_help()
 {
@@ -21,6 +22,8 @@ function show_help()
     '         Limit tests to integration tests' \
     '  -u, --unit' \
     '         Limit tests to unit tests' \
+    '  -v, --verbose' \
+    '         Increase verbosity of the output' \
     '' \
     'COMMANDS' \
     '  clear-cache - clears tests cache' \
@@ -76,25 +79,13 @@ function run_tests()
   local -i fail=0
   local test_failure_list=''
   local test_dir
-  local integration_tests_setup=0 # have we setup the environment for integration tests?
   local current_test
   local target
 
   for target in "${TESTS[@]}"; do
     if [[ -f "$target" ]]; then
 
-      # if we are running integration tests, we will set up the environment for
-      # them here. That is because all integration tests share the same setup:
-      # at least the container environment must be up. It is much more efficient
-      # to run the setup just once for all tests than to run it for every test.
-      # This approach also avoids code duplication in the files.
       test_dir=$(dirname "${target}")
-      if [[ "$test_dir" =~ '/integration' && "$integration_tests_setup" == 0 ]]; then
-        integration_tests_setup=1
-        say 'Preparing environment for integration tests...'
-        setup_container_environment
-        printf '\n'
-      fi
 
       # Format the test name to be displayed in the output.
       current_test="$(basename "$test_dir")/$(basename "$target" | sed 's/.sh//')"
@@ -122,14 +113,11 @@ function run_tests()
     fi
   done
 
-  # instead of tearing down the container environment after each integration test,
-  # we will tear it down only after all tests have ran. This optimizes significant
-  # amount of time for the integration tests.
-  if [[ "${integration_tests_setup}" == 1 ]]; then
-    printf '\n' # add new line after the last "OK"
+  if [[ "$test_dir" =~ '/integration' && "$VERBOSE" -eq 1 ]]; then
+    say '' # add new line after the last "OK"
     say 'Tearing down containers used in integration tests...'
     teardown_containers
-    printf '\n'
+    say ''
   fi
 
   report_results "$total" "$success" "$notfound" "$fail" "$test_failure_list"
@@ -151,7 +139,9 @@ function set_tests()
   local file
   TESTS=()
   for file in "$@"; do
-    TESTS+=("${file}")
+    if [[ "$file" == *'_test.sh' ]]; then
+      TESTS+=("$file")
+    fi
   done
 }
 
@@ -193,38 +183,54 @@ function run_user_provided_tests()
   local regex
   local files_list
 
-  # We use a regex to filter files so we test multiple tests matching a desirable
-  # pattern. For example, we can run all config-related tests  by  providing  the
-  # word config. We can also run both config unit  test  and  config  integration
-  # test with this approach.
+  # Create a regular expression from the provided arguments. Replace all spaces
+  # in the arguments with '|', creating an expression that matches any of the
+  # provided terms. For example, if the arguments are "test1 test2 test3", the
+  # resulting expression will be "(test1|test2|test3)".
   regex="($(sed 's/ /|/g' <<< "${@}"))"
-  files_list=$(find "$TESTS_DIR" | grep --perl-regexp "${regex}" | grep --extended-regexp --invert-match 'samples/.*|/shunit2/')
+  files_list=$(find "$TESTS_DIR" | grep --perl-regexp "$regex" | grep --extended-regexp --invert-match 'samples/.*|/shunit2/')
 
   # shellcheck disable=SC2086
   set_tests $files_list
-
   LANGUAGE=en_US.UTF_8 run_tests
 }
 
-# parse flag
-case "$1" in
-  --unit | -u)
-    TESTS_DIR='./tests/unit'
-    TESTS_INTEGRATION=0
-    shift
-    ;;
-  --integration | -i)
-    TESTS_DIR='./tests/integration'
-    TESTS_UNIT=0
-    shift
-    ;;
-  *)
-    TESTS_DIR='./tests'
-    ;;
-esac
+# Parse flag
+while [[ "$1" =~ ^- && ! "$1" == '--' ]]; do
+  case "$1" in
+    --unit | -u)
+      TESTS_DIR='./tests/unit'
+      CLEAR_UNIT_CACHE=1
+      shift
+      ;;
+    --integration | -i)
+      TESTS_DIR='./tests/integration'
+      CLEAR_INTEGRATION_CACHE=1
+      shift
+      ;;
+    --all | -a)
+      TESTS_DIR='./tests'
+      shift
+      ;;
+    --verbose | -v)
+      VERBOSE=1
+      export VERBOSE
+      shift
+      ;;
+    *)
+      show_help
+      exit 1
+      ;;
+  esac
+done
 
 action=${1:-all}
 shift
+
+# Default to unit tests if no specific type is provided
+if [[ -z "$TESTS_DIR" ]]; then
+  TESTS_DIR='./tests/unit'
+fi
 
 case "$action" in
   all)
@@ -237,8 +243,8 @@ case "$action" in
     run_user_provided_tests "$@"
     ;;
   clear-cache)
-    [[ "$TESTS_UNIT" -eq 1 ]] && clear_unit_tests_cache "$@"
-    [[ "$TESTS_INTEGRATION" -eq 1 ]] && clear_integration_tests_cache "$@"
+    [[ "$CLEAR_UNIT_CACHE" -eq 1 ]] && clear_unit_tests_cache "$@"
+    [[ "$CLEAR_INTEGRATION_CACHE" -eq 1 ]] && clear_integration_tests_cache "$@"
     ;;
   *)
     show_help

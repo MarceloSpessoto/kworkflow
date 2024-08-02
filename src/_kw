@@ -34,7 +34,7 @@ _kw()
     'help:Show kw man page'
     'init:Initialize kworkflow config file'
     'kernel-config-manager:Manage config files'
-    'mail:Send patches via email'
+    'send-patch:Send patches via email'
     'maintainers:Get maintainers and mailing list'
     'man:Show manual pages'
     'pomodoro:kw pomodoro support'
@@ -344,7 +344,7 @@ _kw_kernel-config-manager()
     $force
 }
 
-_kw_mail()
+_kw_send-patch()
 {
   local -a send_options=()
   local global=''
@@ -406,8 +406,8 @@ _kw_maintainers()
 _kw_man()
 {
   _values 'kw commands' \
-    'backup' 'build' 'codestyle' 'config' 'debug' 'deploy' 'device' 'diff' 'drm' 'env' \
-    'explore' 'init' 'mail' 'maintainers' 'pomodoro' 'remote' 'report' 'self-update' 'ssh' \
+    'backup' 'bd' 'build' 'codestyle' 'config' 'debug' 'deploy' 'device' 'diff' 'drm' 'env' \
+    'explore' 'init' 'send-patch' 'maintainers' 'pomodoro' 'remote' 'report' 'self-update' 'ssh' \
     'patch-hub' 
 }
 
@@ -431,9 +431,10 @@ _kw_pomodoro()
 
   _arguments : \
     '(--verbose)--verbose[enable verbose mode]' \
-    '(-t --set-timer -c --check-timer -s --show-tags)'{-t,--set-timer}'[set the timer for the Pomodoro timebox]: : ' \
-    '(-c --check-timer -t --set-timer -s --show-tags)'{-c,--check-timer}'[shows information of each active Pomodoro timebox]' \
-    '(-s --show-tags -c --check-timer -t --set-timer)'{-s,--show-tags}'[shows registered tags]' \
+    '(--repeat-previous -t --set-timer -c --check-timer -s --show-tags)--repeat-previous[repeats the last Pomodoro session]' \
+    '(-t --set-timer -c --check-timer -s --show-tags --repeat-previous)'{-t,--set-timer}'[set the timer for the Pomodoro timebox]: : ' \
+    '(-c --check-timer -t --set-timer -s --show-tags --repeat-previous)'{-c,--check-timer}'[shows information of each active Pomodoro timebox]' \
+    '(-s --show-tags -c --check-timer -t --set-timer --repeat-previous)'{-s,--show-tags}'[shows registered tags]' \
     $set_timer_options \
     $tag_options
 }
