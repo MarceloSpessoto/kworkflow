@@ -1,12 +1,22 @@
 pipeline {
-  agent { label 'docker-agent' }
+  agent { label 'shellcheck-agent' }
   stages {
+
+    stage('Set ENV vars for reviewdog'){
+      steps{
+        sh '''
+           export CI_PULL_REQUEST="${CHANGE_ID}"
+           export CI_REPO_OWNER=MarceloSpessoto
+           export CI_REPO_NAME=kworkflow
+           export CI_COMMIT="${GIT_COMMIT}"
+           export REVIEWDOG_INSECURE_SKIP_VERIFY=true
+        '''
+      }
+    }
 
     stage('Build'){
       steps{
-        sh '''
-          for file in $(find . -name "src/*.sh"); do shellcheck --external-sources --shell=bash --exclude=SC2016,SC2181,SC2034,SC2154,SC2001,SC1090,SC1091,SC2120 $file; done;
-        '''
+        sh 'shellcheck --external-sources --shell=bash --exclude=SC2016,SC2181,SC2034,SC2154,SC2001,SC1090,SC1091,SC2120 src/*.sh | reviewdog -reporter=github-check'
       }
     }
 
