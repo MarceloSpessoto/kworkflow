@@ -21,5 +21,6 @@ RUN wget https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellc
     && cp shellcheck-v0.10.0/shellcheck /usr/bin/ \
     && rm -rf shellcheck-v0.10.0
 
-RUN apt install -y shunit2 bc sqlite3 bsdmainutils libxml-xpath-perl 
+RUN apt install -y shunit2 bc sqlite3 bsdmainutils libxml-xpath-perl software-properties-common python3-launchpadlib \
+    python3-venv python3-pip
 #USER kworkflow

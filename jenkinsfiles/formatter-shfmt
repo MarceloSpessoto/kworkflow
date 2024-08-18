@@ -1,16 +1,10 @@
 pipeline {
-  agent {
-    dockerfile true  
-  }
+  agent { label 'basic-agent' }
   stages {
 
     stage('Build'){
       steps{
-        sh '''
-          apt update -y
-          apt install -y shfmt
-          shfmt -i=2 -ln=bash -fn -ci -sr -d .
-        '''
+        sh 'shfmt -i=2 -ln=bash -fn -ci -sr -d .'
       }
     }
 
