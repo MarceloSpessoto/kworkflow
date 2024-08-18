@@ -6,12 +6,12 @@ pipeline {
     CI_REPO_NAME = "kworkflow"
     CI_COMMIT = "${GIT_COMMIT}"
     REVIEWDOG_INSECURE_SKIP_VERIFY = "true"
-    REVIEWDOG_GITHUB_API_TOKEN="<token>"
+    REVIEWDOG_GITHUB_API_TOKEN = credentials('github-token')
   }
   stages {
     stage('Build'){
       steps{
-        sh '/bin/bash -c "shellcheck -f checkstyle --external-sources --shell=bash --exclude=SC2016,SC2181,SC2034,SC2154,SC2001,SC1090,SC1091,SC2120 src/*.sh | REVIEWDOG_TOKEN="<token>" reviewdog -f checkstyle -reporter=github-check"'
+        sh '/bin/bash -c "shellcheck -f checkstyle --external-sources --shell=bash --exclude=SC2016,SC2181,SC2034,SC2154,SC2001,SC1090,SC1091,SC2120 src/*.sh | reviewdog -f checkstyle -reporter=github-check"'
       }
     }
 
